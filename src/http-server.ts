@@ -350,6 +350,84 @@ class GHLMCPHttpServer {
       }
     });
 
+    // REST endpoint to call tools directly (for n8n, webhooks, etc.)
+    this.app.post('/call-tool', async (req, res) => {
+      const { tool, arguments: args } = req.body;
+
+      if (!tool) {
+        res.status(400).json({
+          success: false,
+          error: 'Missing required field: tool'
+        });
+        return;
+      }
+
+      console.log(`[GHL MCP HTTP] REST call-tool: ${tool}`);
+      console.log(`[GHL MCP HTTP] Arguments: ${JSON.stringify(args, null, 2)}`);
+
+      try {
+        let result: any;
+        const toolArgs = args || {};
+
+        // Route to appropriate tool handler
+        if (this.isContactTool(tool)) {
+          result = await this.contactTools.executeTool(tool, toolArgs);
+        } else if (this.isConversationTool(tool)) {
+          result = await this.conversationTools.executeTool(tool, toolArgs);
+        } else if (this.isBlogTool(tool)) {
+          result = await this.blogTools.executeTool(tool, toolArgs);
+        } else if (this.isOpportunityTool(tool)) {
+          result = await this.opportunityTools.executeTool(tool, toolArgs);
+        } else if (this.isCalendarTool(tool)) {
+          result = await this.calendarTools.executeTool(tool, toolArgs);
+        } else if (this.isEmailTool(tool)) {
+          result = await this.emailTools.executeTool(tool, toolArgs);
+        } else if (this.isLocationTool(tool)) {
+          result = await this.locationTools.executeTool(tool, toolArgs);
+        } else if (this.isEmailISVTool(tool)) {
+          result = await this.emailISVTools.executeTool(tool, toolArgs);
+        } else if (this.isSocialMediaTool(tool)) {
+          result = await this.socialMediaTools.executeTool(tool, toolArgs);
+        } else if (this.isMediaTool(tool)) {
+          result = await this.mediaTools.executeTool(tool, toolArgs);
+        } else if (this.isObjectTool(tool)) {
+          result = await this.objectTools.executeTool(tool, toolArgs);
+        } else if (this.isAssociationTool(tool)) {
+          result = await this.associationTools.executeAssociationTool(tool, toolArgs);
+        } else if (this.isCustomFieldV2Tool(tool)) {
+          result = await this.customFieldV2Tools.executeCustomFieldV2Tool(tool, toolArgs);
+        } else if (this.isWorkflowTool(tool)) {
+          result = await this.workflowTools.executeWorkflowTool(tool, toolArgs);
+        } else if (this.isSurveyTool(tool)) {
+          result = await this.surveyTools.executeSurveyTool(tool, toolArgs);
+        } else if (this.isStoreTool(tool)) {
+          result = await this.storeTools.executeStoreTool(tool, toolArgs);
+        } else if (this.isProductsTool(tool)) {
+          result = await this.productsTools.executeProductsTool(tool, toolArgs);
+        } else {
+          res.status(404).json({
+            success: false,
+            error: `Unknown tool: ${tool}`
+          });
+          return;
+        }
+
+        console.log(`[GHL MCP HTTP] Tool ${tool} executed successfully`);
+
+        res.json({
+          success: true,
+          tool: tool,
+          result: result
+        });
+      } catch (error) {
+        console.error(`[GHL MCP HTTP] Error executing tool ${tool}:`, error);
+        res.status(500).json({
+          success: false,
+          error: `Tool execution failed: ${error}`
+        });
+      }
+    });
+
     // SSE endpoint for ChatGPT MCP connection
     const handleSSE = async (req: express.Request, res: express.Response) => {
       const sessionId = req.query.sessionId || 'unknown';
@@ -396,10 +474,24 @@ class GHLMCPHttpServer {
           health: '/health',
           capabilities: '/capabilities',
           tools: '/tools',
+          'call-tool': '/call-tool (POST)',
           sse: '/sse'
         },
         tools: this.getToolsCount(),
-        documentation: 'https://github.com/your-repo/ghl-mcp-server'
+        documentation: 'https://github.com/your-repo/ghl-mcp-server',
+        usage: {
+          'call-tool': {
+            method: 'POST',
+            body: {
+              tool: 'tool_name',
+              arguments: { /* tool arguments */ }
+            },
+            example: {
+              tool: 'search_contacts',
+              arguments: { query: 'john', limit: 10 }
+            }
+          }
+        }
       });
     });
   }
