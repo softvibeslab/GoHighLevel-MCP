@@ -1,0 +1,217 @@
+{
+  "name": "GHL AI Agent with MCP Tools",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "trigger-chat",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "webhookId": "ghl-agent-chat"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres un asistente de CRM experto en GoHighLevel. Tienes acceso a herramientas para gestionar contactos, conversaciones, oportunidades, calendarios, facturas y más.\n\nCuando el usuario te pida información sobre contactos, oportunidades, citas u otras entidades de GHL, usa las herramientas disponibles para obtener la información.\n\nSiempre responde en español a menos que el usuario hable en otro idioma.\n\nHerramientas disponibles:\n- search_contacts: Buscar contactos\n- get_contact: Obtener detalles de un contacto\n- create_contact: Crear nuevo contacto\n- search_opportunities: Buscar oportunidades de venta\n- get_pipelines: Obtener pipelines de ventas\n- search_conversations: Buscar conversaciones\n- send_sms: Enviar SMS a un contacto\n- send_email: Enviar email a un contacto\n- get_calendars: Obtener calendarios\n- create_appointment: Crear una cita"
+        }
+      },
+      "id": "agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "id": "openai-chat",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [220, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "search_contacts",
+        "description": "Busca contactos en GoHighLevel. Puedes buscar por nombre, email, teléfono o tags.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"query\": \"john\",\n  \"limit\": 10\n}"
+      },
+      "id": "tool-search-contacts",
+      "name": "Tool: Search Contacts",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [440, 200]
+    },
+    {
+      "parameters": {
+        "name": "get_contact",
+        "description": "Obtiene los detalles completos de un contacto específico usando su ID.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"contactId\": \"abc123\"\n}"
+      },
+      "id": "tool-get-contact",
+      "name": "Tool: Get Contact",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [440, 340]
+    },
+    {
+      "parameters": {
+        "name": "search_opportunities",
+        "description": "Busca oportunidades de venta. Puedes filtrar por pipeline, etapa, estado o contacto.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"pipelineId\": \"pipeline_id\",\n  \"status\": \"open\",\n  \"limit\": 10\n}"
+      },
+      "id": "tool-search-opportunities",
+      "name": "Tool: Search Opportunities",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [580, 200]
+    },
+    {
+      "parameters": {
+        "name": "send_sms",
+        "description": "Envía un SMS a un contacto. Requiere el ID del contacto y el mensaje.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"contactId\": \"abc123\",\n  \"message\": \"Hola, este es un mensaje de prueba\"\n}"
+      },
+      "id": "tool-send-sms",
+      "name": "Tool: Send SMS",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [580, 340]
+    },
+    {
+      "parameters": {
+        "name": "get_pipelines",
+        "description": "Obtiene todos los pipelines de ventas disponibles con sus etapas.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": ""
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{}"
+      },
+      "id": "tool-get-pipelines",
+      "name": "Tool: Get Pipelines",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [720, 200]
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Search Contacts": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Contact": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Search Opportunities": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Send SMS": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Get Pipelines": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
